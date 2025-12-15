@@ -1,8 +1,4 @@
-import gzip
-import io
 import json
-import os
-from dataclasses import asdict
 from datetime import datetime
 from typing import Dict, List
 
@@ -10,6 +6,17 @@ import numpy
 
 from domains.course import Courses
 from domains.student import StudentMarks
+
+
+class AutoSave:
+    files: List[str] = [".auto_save"]
+
+    @staticmethod
+    def list_paths() -> List[str]:
+        with open(AutoSave.files[0], "r", encoding="utf-8") as f:
+            next(f, None)
+            file_paths = [line.strip() for line in f if line.strip()]
+        return list(dict.fromkeys(file_paths))
 
 
 class StudentMarksDatabase:
@@ -35,46 +42,22 @@ class StudentMarksDatabase:
 
         return numpy.sum(marks_arr * credits_arr) / numpy.sum(credits_arr)
 
-    def export_to_json(self, filename: str = "students.dat"):
-        data = {
-            "courses": [asdict(c) for c in self._courses.values()],
-            "students": [asdict(s) for s in self._students.values()],
-        }
+    def load_students(self, filepath: str):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for sid, info in data.items():
+                info["DoB"] = datetime.fromisoformat(info["DoB"])
+                self._students[sid] = StudentMarks(**info)
 
-        try:
-            with gzip.open(filename, "wb") as f:
-                with io.TextIOWrapper(f, encoding="utf-8") as wrapper:
-                    json.dump(data, wrapper, indent=4, ensure_ascii=False, default=str)
-            print(f"Exported to {filename}")
-        except Exception as e:
-            print(f"Export Error: {e}")
+    def load_courses(self, filepath: str):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for cid, info in data.items():
+                self._courses[cid] = Courses(**info)
 
-    def import_from_json(self, filename: str = "students.dat"):
-        if not os.path.exists(filename):
-            print("File not found.")
-            return
-
-        try:
-            with gzip.open(filename, "rb") as f:
-                with io.TextIOWrapper(f, encoding="utf-8") as wrapper:
-                    data = json.load(wrapper)
-
-            self._courses = {c["id"]: Courses(**c) for c in data.get("courses", [])}
-
-            self._students = {}
-            for s_data in data.get("students", []):
-                if isinstance(s_data["DoB"], str):
-                    try:
-                        s_data["DoB"] = datetime.fromisoformat(s_data["DoB"])
-                    except ValueError:
-                        s_data["DoB"] = datetime.strptime(
-                            s_data["DoB"], "%Y-%m-%d %H:%M:%S"
-                        )
-
-                student = StudentMarks(**s_data)
-                self._students[student.id] = student
-
-            print(f"Loaded from {filename}")
-
-        except Exception as e:
-            print(f"Import Error: {e}")
+    def load_marks(self, filepath: str):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for sid, marks in data.items():
+                if sid in self._students:
+                    self._students[sid].marks.update(marks)
