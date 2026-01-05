@@ -17,6 +17,7 @@ class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
         self._input_interface()
 
     def __before_open(self):
+        print("Loading data...")
         if os.path.exists("students.dat"):
             decompress.extract_all("students.dat")
         else:
