@@ -12,6 +12,8 @@ from output import StudentMarksOutput
 class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
     def __init__(self):
         super().__init__()
+        self.save_thread: threading.Thread | None = None
+        self.load_thread: threading.Thread | None = None
         self.__before_open()
 
     def __input(self):
@@ -39,10 +41,10 @@ class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
                     pass
 
     def __before_open(self):
-        print("System starting... Loading data in background...")
-        t = threading.Thread(target=self.__load_data_thread)
-        t.daemon = True
-        t.start()
+        print("Loading data in background...")
+        self.load_thread = threading.Thread(target=self.__load_data_thread)
+        self.load_thread.daemon = True
+        self.load_thread.start()
 
     def __list(self, option: str | None = None):
         match option:
@@ -58,6 +60,8 @@ class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
                 print(ValueError("Unknown option"))
 
     def __check_value(self):
+        self.__ensure_data_loaded()
+
         if not self._students or not self._courses:
             raise ValueError("Please input first")
 
@@ -71,18 +75,39 @@ class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
                 print("Unknown compress method")
 
     def __compress_menu(self):
+        if self.save_thread is not None and self.save_thread.is_alive():
+            print("\n[Warning] Background save is still running! Please wait.")
+            return None
+
         method: str = input("Compress method (zip, tar.gz): ").strip().lower()
 
-        t = threading.Thread(target=self.__compress_thread, args=(method,))
-        t.start()
+        self.save_thread = threading.Thread(
+            target=self.__compress_thread, args=(method,)
+        )
+        self.save_thread.start()
 
-        return t
+        return self.save_thread
 
     def __before_close(self):
         if (input("Save changes? (Y/n) ").strip().lower() or "y") == "y":
-            self.__compress_menu()
+            self.__ensure_data_loaded()
+
+            t = self.__compress_menu()
+
+            if t is not None:
+                print("Saving... Please wait...")
+                t.join()
+            elif self.save_thread is not None and self.save_thread.is_alive():
+                print("Finishing background save task... Please wait...")
+                self.save_thread.join()
 
         sys.exit(0)
+
+    def __ensure_data_loaded(self):
+        if self.load_thread is not None and self.load_thread.is_alive():
+            print("Data is still loading... Please wait a moment...")
+            self.load_thread.join()
+            print("Done waiting. Executing command...")
 
     def main(self):
         while True:
@@ -94,8 +119,10 @@ class UI(StudentMarksInput, StudentMarksOutput, StudentMarksDatabase):
 
             match option:
                 case "input":
+                    self.__ensure_data_loaded()
                     self.__input()
                 case "save":
+                    self.__ensure_data_loaded()
                     self.__compress_menu()
                 case "exit":
                     self.__before_close()
