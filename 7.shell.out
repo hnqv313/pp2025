@@ -1,0 +1,20 @@
+7.shell> ls -la
+tổng 36
+drwxr-xr-x 1 user user  220 10:21  5 Thg 1  .
+drwxrwxrwt 1 user user   86 17:33 26 Thg 12 ..
+-rw-r--r-- 1 user user 2742 10:51 29 Thg 11 1.student.mark.py
+-rw-r--r-- 1 user user 4594 10:46  1 Thg 12 2.student.mark.oop.py
+-rw-r--r-- 1 user user 5810 14:57 13 Thg 12 3.student.mark.oop.math.py
+-rw-r--r-- 1 user user 2374 10:17  5 Thg 1  7.shell.py
+drwxr-xr-x 1 user user  150 13:19 15 Thg 12 .git
+-rw-r--r-- 1 user user 4720 10:54 15 Thg 12 .gitignore
+drwxr-xr-x 1 user user   84 15:17 13 Thg 12 pw4
+drwxr-xr-x 1 user user  176 09:47  5 Thg 1  pw5
+drwxr-xr-x 1 user user   84 17:21 13 Thg 12 pw6
+-rw-r--r-- 1 user user  126 11:12 29 Thg 11 README.md
+drwxr-xr-x 1 user user   76 14:20 13 Thg 12 venv
+7.shell> ls -la > out.txt
+7.shell> bc < input.txt
+7.shell> ps aux | grep term
+user     85954  0.0  0.0   9860  6260 pts/0    S<+  10:23   0:00 grep term
+7.shell> exit
